@@ -26,7 +26,7 @@ function Get-OpsDiskUtil {
                 Expression = { [math]::Round($_.FreeSpace / 1GB, 2) }
             },
             @{
-                Name = "FreeSpace(%)";
+                Name = "Utilization(%)";
                 Expression = { [math]::Round((($_.Size - $_.FreeSpace) / $_.Size) * 100, 2) }
             }
         return $diskUtil
