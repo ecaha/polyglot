@@ -88,7 +88,7 @@ flowchart TD
 - [PowerShell Modules Overview](https://learn.microsoft.com/powershell/scripting/developer/module/ps-modules)
 - [Create a PowerShell Module Manifest](https://learn.microsoft.com/powershell/module/microsoft.powershell.core/new-modulemanifest)
 - [Publish-Module to PowerShell Gallery](https://learn.microsoft.com/powershell/scripting/gallery/how-to/publishing-packages/publish-module)
-- [Mermaid Diagram Syntax](https://mermaid.js.org/syntax/)
+
 
 ## Future Enhancements
 - Add centralized configuration for log paths and retention.
