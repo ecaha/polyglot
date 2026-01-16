@@ -5,7 +5,7 @@ function Get-OpsDiskUtil {
     )
     try {
         $date = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-        $hostname = $ComputerName
+        $hostname = $env:COMPUTERNAME
         $diskUtil = Get-WmiObject -Class Win32_LogicalDisk -ComputerName $ComputerName -ErrorAction Stop |
             Where-Object { $_.DriveType -eq 3 } |
             Select-Object @{
