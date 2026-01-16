@@ -1,15 +1,16 @@
 # ModuleScenario Documentation
 
 ## Overview
-ModuleScenario is a minimal PowerShell module that currently exposes two public cmdlets: `Get-OpsDiskUtil` (per-volume disk metrics) and `Get-OpsComputerUtilization` (disk, memory, CPU overview). It also contains private helpers responsible for structured logging so future public commands can emit consistent telemetry.
+ModuleScenario is a minimal PowerShell module that currently exposes three public cmdlets: `Get-OpsDiskUtil` (per-volume disk metrics), `Get-OpsComputerUtilization` (disk + memory + CPU overview), and `Get-OpsComputerUtilizationReport` (threshold-based alerting). It also contains private helpers responsible for structured logging so future public commands can emit consistent telemetry.
 
 ```
 ModuleScenario/
 ├── ModuleScenario.psm1          # Module entry point
 ├── ModuleScenario.psd1          # Module manifest metadata
 ├── Public/
-│   ├── Get-OpsComputerUtilization.ps1 # Aggregate disk + memory + CPU metrics
-│   └── Get-OpsDiskUtil.ps1            # Disk-focused cmdlet exported to consumers
+│   ├── Get-OpsComputerUtilization.ps1      # Aggregate disk + memory + CPU metrics
+│   ├── Get-OpsComputerUtilizationReport.ps1 # Threshold-based reporting
+│   └── Get-OpsDiskUtil.ps1                 # Disk-focused cmdlet exported to consumers
 └── Private/
     └── Write-OpsLog.ps1         # Private helpers (Get-OpsLogEntry, Write-OpsLog)
 ```
@@ -62,17 +63,21 @@ ModuleScenario/
 ## Internal Architecture
 ```mermaid
 flowchart TD
-    subgraph Disk-only
-        A(Get-OpsDiskUtil) -->|Win32_LogicalDisk| B[Disk Metrics]
-    end
-    subgraph Full Stack
-        C(Get-OpsComputerUtilization) -->|Win32_LogicalDisk| D[Disk Metrics]
-        C -->|Win32_OperatingSystem| E[Memory Metrics]
-        C -->|Win32_Processor| F[CPU Metrics]
-    end
-    A & C --> G{Need Logging?}
-    G -->|Yes| H(Get-OpsLogEntry)
-    H --> I(Write-OpsLog)
+  subgraph Disk-only
+    A(Get-OpsDiskUtil) -->|Win32_LogicalDisk| B[Disk Metrics]
+  end
+  subgraph Full Stack
+    C(Get-OpsComputerUtilization) -->|Win32_LogicalDisk| D[Disk Metrics]
+    C -->|Win32_OperatingSystem| E[Memory Metrics]
+    C -->|Win32_Processor| F[CPU Metrics]
+  end
+  subgraph Reporting
+    J(Get-OpsComputerUtilizationReport) -->|Invokes| C
+    J --> K[Threshold Breach Summary]
+  end
+  A & C & J --> L{Need Logging?}
+  L -->|Yes| H(Get-OpsLogEntry)
+  H --> I(Write-OpsLog)
 ```
 
 ### Public Components
@@ -85,6 +90,10 @@ flowchart TD
   - Parameters mirror `Get-OpsDiskUtil` (`-ComputerName` or `-PSSession`).
   - Reuses a single script block to gather disk, memory (`Win32_OperatingSystem`), and CPU (`Win32_Processor`) data and enrich each disk row with `MemoryTotal/Free/Util(%)` and `CpuTotal/Free/Util(%)` columns.
   - Handles division-by-zero scenarios gracefully and surfaces per-target errors so mixed success/failure scenarios are easy to triage.
+- **Get-OpsComputerUtilizationReport**
+  - Wraps `Get-OpsComputerUtilization` and lets operators set per-metric thresholds (defaults: Disk 85%, Memory 90%, CPU 80%).
+  - Accepts the same targeting parameters (`-ComputerName` or `-PSSession`) and emits one object per breach with host, metric, observed percent, threshold, and a descriptive message plus raw data for further analysis.
+  - Ideal for scheduled monitoring jobs that only need to forward actionable exceptions instead of full telemetry.
 
 ### Usage Examples
 ```powershell
@@ -94,8 +103,11 @@ Get-OpsDiskUtil -ComputerName 'srv-core-01','srv-db-02'
 # Enriched computer utilization via pipeline input
 'srv-core-01','srv-db-02' | Get-OpsComputerUtilization
 
-# Reuse established remote sessions for either cmdlet
-Get-PSSession -Name 'Prod*' | Get-OpsComputerUtilization
+# Alert on threshold breaches (custom CPU limit)
+Get-OpsComputerUtilizationReport -ComputerName 'srv-core-01','srv-db-02' -CpuUtilizationThreshold 70
+
+# Reuse established remote sessions for any cmdlet
+Get-PSSession -Name 'Prod*' | Get-OpsComputerUtilizationReport
 ```
 
 ### Private Components

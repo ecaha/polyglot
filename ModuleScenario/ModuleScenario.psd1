@@ -8,7 +8,7 @@
     Description       = 'Minimal module scaffolding for infrastructure utilities.'
     PowerShellVersion = '5.1'
 
-    FunctionsToExport = @('Get-OpsDiskUtil', 'Get-OpsComputerUtilization')
+    FunctionsToExport = @('Get-OpsDiskUtil', 'Get-OpsComputerUtilization', 'Get-OpsComputerUtilizationReport')
     CmdletsToExport   = @()
     VariablesToExport = @()
     AliasesToExport   = @()
