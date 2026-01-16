@@ -1,4 +1,4 @@
-function Write-OpsLog {
+function Get-OpsLogEntry {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory)]
@@ -7,6 +7,28 @@ function Write-OpsLog {
 
         [Parameter(Mandatory)]
         [string]$Message,
+
+        [string]$Hostname = $env:COMPUTERNAME,
+        [datetime]$Timestamp = (Get-Date).ToUniversalTime()
+    )
+
+    $normalizedLevel = $LogLevel.ToUpperInvariant()
+    $logEntry = "{0} {1} {2} {3}" -f $Timestamp.ToString('o'), $normalizedLevel, $Hostname, $Message.Trim()
+    return $logEntry
+}
+
+function Write-OpsLog {
+    [CmdletBinding(DefaultParameterSetName = 'Components')]
+    param (
+        [Parameter(Mandatory, ParameterSetName = 'Components')]
+        [ValidateSet('Trace', 'Debug', 'Info', 'Warn', 'Error', 'Fatal')]
+        [string]$LogLevel,
+
+        [Parameter(Mandatory, ParameterSetName = 'Components')]
+        [string]$Message,
+
+        [Parameter(Mandatory, ParameterSetName = 'Entry')]
+        [string]$LogEntry,
 
         [Parameter(Mandatory)]
         [string]$LogFile
@@ -22,14 +44,18 @@ function Write-OpsLog {
             New-Item -ItemType File -Path $LogFile -Force | Out-Null
         }
 
-        $timestamp = (Get-Date).ToUniversalTime().ToString('o')
-        $normalizedLevel = $LogLevel.ToUpperInvariant()
-        $hostIdentity = $env:COMPUTERNAME
-        $logEntry = "{0} {1} {2} {3}" -f $timestamp, $normalizedLevel, $hostIdentity, $Message.Trim()
+        if ($PSCmdlet.ParameterSetName -eq 'Components') {
+            $entryToWrite = Get-OpsLogEntry -LogLevel $LogLevel -Message $Message
+        }
+        else {
+            $entryToWrite = $LogEntry
+        }
 
-        Add-Content -Path $LogFile -Value $logEntry
+        Add-Content -Path $LogFile -Value $entryToWrite
+        return $entryToWrite
     }
     catch {
         Write-Warning "Failed to write log entry: $_"
+        return $null
     }
 }
