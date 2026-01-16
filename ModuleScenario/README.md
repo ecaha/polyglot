@@ -9,13 +9,19 @@ Build **one PowerShell module** named **`Ops.LabToolkit`** that can run **`New-O
 - Module imports cleanly: `Import-Module Ops.LabToolkit`
 - `New-OpsLabReport -ComputerName localhost -OutputPath .\report.json` works
 - Report contains at least:
-  - **Inventory** (Topic 10)
-  - **Pending reboot** (Topic 5)
+  - **Inventory** 
+  - **Pending reboot** 
   - Summary of findings (`Info/Warning/Critical` counts)
 
 ---
 
 ## Module skeleton (do first)
+
+PowerShell module additional readings
+    * [Learn](https://learn.microsoft.com/en-us/powershell/scripting/developer/module/how-to-write-a-powershell-script-module?view=powershell-7.5)
+    * [Sample module skeleton on github](https://github.com/MSAdministrator/TemplatePowerShellModule)
+
+
 1. Create module folder:
    - `Ops.LabToolkit\Ops.LabToolkit.psd1`
    - `Ops.LabToolkit\Ops.LabToolkit.psm1`
@@ -31,6 +37,7 @@ Build **one PowerShell module** named **`Ops.LabToolkit`** that can run **`New-O
 ---
 
 ## Consistent public command names
+
 - `New-OpsLabReport` (orchestrator)
 - `Get-OpsInventory` 
 - `Test-OpsPendingReboot` 
