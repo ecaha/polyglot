@@ -1,14 +1,15 @@
 # ModuleScenario Documentation
 
 ## Overview
-ModuleScenario is a minimal PowerShell module that currently exposes a single public cmdlet, `Get-OpsDiskUtil`, for retrieving logical disk utilization data from the local or a remote Windows host. It also contains private helpers responsible for structured logging so future public commands can emit consistent telemetry.
+ModuleScenario is a minimal PowerShell module that currently exposes two public cmdlets: `Get-OpsDiskUtil` (per-volume disk metrics) and `Get-OpsComputerUtilization` (disk, memory, CPU overview). It also contains private helpers responsible for structured logging so future public commands can emit consistent telemetry.
 
 ```
 ModuleScenario/
 ├── ModuleScenario.psm1          # Module entry point
 ├── ModuleScenario.psd1          # Module manifest metadata
 ├── Public/
-│   └── Get-OpsDiskUtil.ps1      # Public cmdlet exported to consumers
+│   ├── Get-OpsComputerUtilization.ps1 # Aggregate disk + memory + CPU metrics
+│   └── Get-OpsDiskUtil.ps1            # Disk-focused cmdlet exported to consumers
 └── Private/
     └── Write-OpsLog.ps1         # Private helpers (Get-OpsLogEntry, Write-OpsLog)
 ```
@@ -61,30 +62,40 @@ ModuleScenario/
 ## Internal Architecture
 ```mermaid
 flowchart TD
-    A(Get-OpsDiskUtil) -->|Collects WMI data| B[Win32_LogicalDisk]
-    A --> C{Logging Needed?}
-    C -->|Yes| D(Get-OpsLogEntry)
-    D --> E(Write-OpsLog)
-    E --> F[Log File]
+    subgraph Disk-only
+        A(Get-OpsDiskUtil) -->|Win32_LogicalDisk| B[Disk Metrics]
+    end
+    subgraph Full Stack
+        C(Get-OpsComputerUtilization) -->|Win32_LogicalDisk| D[Disk Metrics]
+        C -->|Win32_OperatingSystem| E[Memory Metrics]
+        C -->|Win32_Processor| F[CPU Metrics]
+    end
+    A & C --> G{Need Logging?}
+    G -->|Yes| H(Get-OpsLogEntry)
+    H --> I(Write-OpsLog)
 ```
 
-### Public Component
+### Public Components
 - **Get-OpsDiskUtil**
   - Parameters: `-ComputerName` (array, pipeline-aware) **or** `-PSSession` (accepts session objects from the pipeline).
   - Central script block collects `Win32_LogicalDisk` data (local disks only) and formats hostname, timestamp, capacity, free space, and utilization.
   - Emits per-target errors so failed computers/sessions are clearly identified while successful targets continue streaming results.
   - Ready for future logging calls (e.g., wrap WMI calls with `Write-OpsLog`).
+- **Get-OpsComputerUtilization**
+  - Parameters mirror `Get-OpsDiskUtil` (`-ComputerName` or `-PSSession`).
+  - Reuses a single script block to gather disk, memory (`Win32_OperatingSystem`), and CPU (`Win32_Processor`) data and enrich each disk row with `MemoryTotal/Free/Util(%)` and `CpuTotal/Free/Util(%)` columns.
+  - Handles division-by-zero scenarios gracefully and surfaces per-target errors so mixed success/failure scenarios are easy to triage.
 
 ### Usage Examples
 ```powershell
-# Query two servers directly by name
+# Disk-only view across two servers
 Get-OpsDiskUtil -ComputerName 'srv-core-01','srv-db-02'
 
-# Pipe computers from another cmdlet
-'srv-core-01','srv-db-02' | Get-OpsDiskUtil
+# Enriched computer utilization via pipeline input
+'srv-core-01','srv-db-02' | Get-OpsComputerUtilization
 
-# Use existing remote sessions
-Get-PSSession -Name 'Prod*' | Get-OpsDiskUtil
+# Reuse established remote sessions for either cmdlet
+Get-PSSession -Name 'Prod*' | Get-OpsComputerUtilization
 ```
 
 ### Private Components
