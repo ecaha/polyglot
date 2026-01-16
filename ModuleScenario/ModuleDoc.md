@@ -70,10 +70,22 @@ flowchart TD
 
 ### Public Component
 - **Get-OpsDiskUtil**
-  - Parameters: `-ComputerName` (defaults to local machine).
-  - Uses `Get-WmiObject -Class Win32_LogicalDisk` filtered for `DriveType -eq 3` (local disks).
-  - Shapes output into objects with hostname, timestamp, capacity, free space (GB) utilization in %).
+  - Parameters: `-ComputerName` (array, pipeline-aware) **or** `-PSSession` (accepts session objects from the pipeline).
+  - Central script block collects `Win32_LogicalDisk` data (local disks only) and formats hostname, timestamp, capacity, free space, and utilization.
+  - Emits per-target errors so failed computers/sessions are clearly identified while successful targets continue streaming results.
   - Ready for future logging calls (e.g., wrap WMI calls with `Write-OpsLog`).
+
+### Usage Examples
+```powershell
+# Query two servers directly by name
+Get-OpsDiskUtil -ComputerName 'srv-core-01','srv-db-02'
+
+# Pipe computers from another cmdlet
+'srv-core-01','srv-db-02' | Get-OpsDiskUtil
+
+# Use existing remote sessions
+Get-PSSession -Name 'Prod*' | Get-OpsDiskUtil
+```
 
 ### Private Components
 - **Get-OpsLogEntry**
