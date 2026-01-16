@@ -1,7 +1,7 @@
 function Get-OpsDiskUtil {
     Param (
         [Parameter(Mandatory = $false)]
-        [string]$ComputerName = $env:COMPUTERNAME
+        [Array]$ComputerName = $env:COMPUTERNAME
     )
     try {
         $date = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
