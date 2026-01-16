@@ -61,12 +61,15 @@ function Get-OpsComputerUtilizationReport {
             return
         }
 
+        $breachFound = $false
+
         foreach ($entry in $utilizationData) {
             $diskPercent   = $entry.'DiskUtilization(%)'
             $memoryPercent = $entry.'MemoryUtil(%)'
             $cpuPercent    = $entry.'CpuUtil(%)'
 
             if ($diskPercent -ne $null -and $diskPercent -gt $DiskUtilizationThreshold) {
+                $breachFound = $true
                 [pscustomobject]@{
                     Hostname          = $entry.Hostname
                     Timestamp         = $entry.Date
@@ -80,6 +83,7 @@ function Get-OpsComputerUtilizationReport {
             }
 
             if ($memoryPercent -ne $null -and $memoryPercent -gt $MemoryUtilizationThreshold) {
+                $breachFound = $true
                 [pscustomobject]@{
                     Hostname          = $entry.Hostname
                     Timestamp         = $entry.Date
@@ -93,6 +97,7 @@ function Get-OpsComputerUtilizationReport {
             }
 
             if ($cpuPercent -ne $null -and $cpuPercent -gt $CpuUtilizationThreshold) {
+                $breachFound = $true
                 [pscustomobject]@{
                     Hostname          = $entry.Hostname
                     Timestamp         = $entry.Date
@@ -103,6 +108,19 @@ function Get-OpsComputerUtilizationReport {
                     Detail            = "CPU utilization is $cpuPercent% (threshold $CpuUtilizationThreshold%)."
                     Raw               = $entry
                 }
+            }
+        }
+
+        if (-not $breachFound) {
+            [pscustomobject]@{
+                Hostname         = ($utilizationData | Select-Object -First 1).Hostname
+                Timestamp        = (Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
+                Metric           = 'Summary'
+                Target           = 'All'
+                ObservedPercent  = 0
+                ThresholdPercent = $null
+                Detail           = 'No utilization issues detected.'
+                Raw              = $utilizationData
             }
         }
     }

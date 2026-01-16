@@ -93,6 +93,7 @@ flowchart TD
 - **Get-OpsComputerUtilizationReport**
   - Wraps `Get-OpsComputerUtilization` and lets operators set per-metric thresholds (defaults: Disk 85%, Memory 90%, CPU 80%).
   - Accepts the same targeting parameters (`-ComputerName` or `-PSSession`) and emits one object per breach with host, metric, observed percent, threshold, and a descriptive message plus raw data for further analysis.
+  - When no breaches occur, returns a summary object indicating "No utilization issues detected" so downstream automation can distinguish clean runs from missing data.
   - Ideal for scheduled monitoring jobs that only need to forward actionable exceptions instead of full telemetry.
 
 ### Usage Examples
