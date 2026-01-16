@@ -20,18 +20,25 @@ ModuleScenario/
 
 ## Build Workflow
 1. **Restore workspace**
-   ```powershell
-   git clone https://github.com/<org>/polyglot.git
-   cd polyglot/ModuleScenario
-   ```
+  ```powershell
+  git clone -b ec-module https://github.com/ecaha/polyglot.git
+  cd polyglot/ModuleScenario
+  ```
 2. **Run module tests (optional)** – add Pester tests under `tests/` when available.
 3. **Package the module**
-   ```powershell
-   $moduleRoot = Split-Path -Parent $PSCommandPath
-   New-Item -ItemType Directory -Force -Path .\dist | Out-Null
-   Copy-Item -Path .\ModuleScenario.psd1, .\ModuleScenario.psm1, .\Public, .\Private -Destination .\dist -Recurse
-   Compress-Archive -Path .\dist\* -DestinationPath .\ModuleScenario.zip -Force
-   ```
+  ```powershell
+  $moduleRoot = (Resolve-Path .).Path
+  $distPath   = Join-Path $moduleRoot 'dist'
+
+  New-Item -ItemType Directory -Force -Path $distPath | Out-Null
+  Copy-Item -Path (Join-Path $moduleRoot 'ModuleScenario.psd1'), \
+              (Join-Path $moduleRoot 'ModuleScenario.psm1'), \
+              (Join-Path $moduleRoot 'Public'), \
+              (Join-Path $moduleRoot 'Private') \
+         -Destination $distPath -Recurse
+
+  Compress-Archive -Path (Join-Path $distPath '*') -DestinationPath (Join-Path $moduleRoot 'ModuleScenario.zip') -Force
+  ```
 4. **Increment version** – update `ModuleVersion` inside `ModuleScenario.psd1` prior to publishing.
 
 ## Deployment
