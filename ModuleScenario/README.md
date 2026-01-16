@@ -19,8 +19,8 @@ Build **one PowerShell module** named **`Ops.LabToolkit`** that can run **`New-O
 
 PowerShell module additional readings
 
-    * [Learn](https://learn.microsoft.com/en-us/powershell/scripting/developer/module/how-to-write-a-powershell-script-module?view=powershell-7.5)
-    * [Sample module skeleton on github](https://github.com/MSAdministrator/TemplatePowerShellModule)
+    * (Learn)[https://learn.microsoft.com/en-us/powershell/scripting/developer/module/how-to-write-a-powershellscript-module?view=powershell-7.5]
+    * (Sample module skeleton on github)[https://github.com/MSAdministrator/TemplatePowerShellModule]
 
 
 1. Create module folder:
